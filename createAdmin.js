@@ -1,24 +1,24 @@
-
-
-const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
-require("dotenv").config();
+const mongoose = require("mongoose");
 
-const Admin = require("./models/Admin");
-
-// Connect to MongoDB
-mongoose.connect("mongodb://127.0.0.1:27017/userInformation", {
+mongoose.connect("mongodb://127.0.0.1:27017/plexiEmploye", {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
 
-async function createAdmin() {
-  const hashedPassword = await bcrypt.hash("admin123", 10);
-  const admin = new Admin({ email: "admin@example.com", password: hashedPassword });
+const userSchema = new mongoose.Schema({
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true }, // Hashed password
+});
 
-  await admin.save();
-  console.log(" created successfully!");
+const User = mongoose.model("User", userSchema);
+
+async function createUser() {
+  const hashedPassword = await bcrypt.hash("password123", 10);
+  const user = new User({ email: "admin@example.com", password: hashedPassword });
+  await user.save();
+  console.log("User created successfully");
   mongoose.connection.close();
 }
 
-createAdmin();
+createUser();

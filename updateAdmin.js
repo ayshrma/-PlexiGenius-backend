@@ -11,8 +11,8 @@ mongoose.connect("mongodb://127.0.0.1:27017/plexiAdmin", {
 });
 
 async function updateAdmin() {
-  const newEmail = "ayush@sharma.com"; 
-  const newPassword = "Mahadev"; 
+  const newEmail = "plexigenius@gmail.com"; 
+  const newPassword = "Sharma**"; 
 
   try {
     const hashedPassword = await bcrypt.hash(newPassword, 10);

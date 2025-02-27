@@ -1,23 +1,36 @@
-
 require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
-const jwt = require("jsonwebtoken");
-const bcrypt = require("bcryptjs");
 const cors = require("cors");
 
 const app = express();
 app.use(express.json());
 app.use(cors());
 
+// Connect to MongoDB
 mongoose.connect("mongodb://127.0.0.1:27017/plexiEmploye", {
   useNewUrlParser: true,
   useUnifiedTopology: true,
-}).then(() => console.log("✅ Connected to MongoDB"))
+}).then(() => console.log("Connected to MongoDB"))
   .catch(err => console.error("MongoDB Connection Error:", err));
 
+  const users = [
+    { email: "plexigenius@gmail.com", password: "plexigenius00" },
+    { email: "user1@example.com", password: "password1" }
+  ];
+  
+  app.post("/login", (req, res) => {
+    const { email, password } = req.body;
+  
+    const user = users.find((u) => u.email === email && u.password === password);
+    if (!user) {
+      return res.status(401).json({ message: "Invalid email or password" });
+    }
+  
+    res.json({ message: "Login successful", user: { email: user.email } });
+  });
 
-
+// EmployeeSchema 
 const employeeSchema = new mongoose.Schema({
   name: String,
   email: String,
@@ -25,9 +38,9 @@ const employeeSchema = new mongoose.Schema({
   department: String,
   status: { type: String, enum: ["Active", "Inactive"], default: "Active" },
 });
-
 const Employee = mongoose.model("Employee", employeeSchema);
 
+// Employee 
 app.get("/employees", async (req, res) => {
   try {
     const employees = await Employee.find();
@@ -66,65 +79,7 @@ app.delete("/employees/:id", async (req, res) => {
   }
 });
 
-
-
-const adminSchema = new mongoose.Schema({
-  email: String,
-  password: String,
-});
-const Admin = mongoose.model("Admin", adminSchema);
-
-// 🔹 Middleware to Verify Token
-const verifyToken = (req, res, next) => {
-  const token = req.header("Authorization")?.split(" ")[1];
-  if (!token) return res.status(401).json({ message: "Access Denied" });
-
-  try {
-    const verified = jwt.verify(token, process.env.JWT_SECRET);
-    req.admin = verified;
-    next();
-  } catch (error) {
-    res.status(403).json({ message: "Invalid Token" });
-  }
-};
-
-app.post("/auth/register", async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const existingAdmin = await Admin.findOne({ email });
-    if (existingAdmin) return res.status(400).json({ message: "Admin already exists" });
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const newAdmin = new Admin({ email, password: hashedPassword });
-    await newAdmin.save();
-    res.status(201).json({ message: "Admin registered successfully" });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.post("/auth/login", async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const admin = await Admin.findOne({ email });
-    if (!admin) return res.status(400).json({ message: "Admin not found" });
-
-    const isMatch = await bcrypt.compare(password, admin.password);
-    if (!isMatch) return res.status(400).json({ message: "Invalid password" });
-
-    const token = jwt.sign({ id: admin._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
-    res.json({ token });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.get("/admin/dashboard", verifyToken, (req, res) => {
-  res.json({ message: "Welcome to the Admin Dashboard!" });
-});
-
-
-
+// TaskSchema 
 const taskSchema = new mongoose.Schema({
   title: String,
   description: String,
@@ -133,9 +88,9 @@ const taskSchema = new mongoose.Schema({
   status: { type: String, enum: ["Pending", "In Progress", "Completed"], default: "Pending" },
   assignedEmployee: String,
 });
-
 const Task = mongoose.model("Task", taskSchema);
 
+// Task Routes
 app.post("/tasks", async (req, res) => {
   try {
     const newTask = new Task(req.body);
@@ -174,7 +129,5 @@ app.delete("/tasks/:id", async (req, res) => {
   }
 });
 
-
-
 const PORT = process.env.PORT || 8000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
